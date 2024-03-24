@@ -1,0 +1,271 @@
+#+title: Zestaw 1 - Arytmetyka komputerowa
+#+author: Piotr Karamon
+#+date:
+#+language: pl
+#+options: toc:nil
+#+latex_header: \usepackage[polish]{babel}
+#+latex_header: \usepackage[T1]{fontenc}
+#+latex_header: \usepackage[utf8]{inputenc}
+#+latex_header: \selectlanguage{polish}
+#+latex_header: \usepackage{caption}
+#+latex_header: \usepackage{booktabs}
+#+latex_header: \captionsetup{labelfont=bf}
+#+latex_header: \usepackage{float}
+
+
+* Znaleźć maszynowe epsilon
+
+Maszynowe epsilon dla systemu zmiennoprzecinkowego jest to najmniejsza dodatnia
+liczba $\epsilon$  którą można dodać do 1, aby otrzymać wynik różny od 1. Taka liczba
+musi mieć ten sam wykładnik jak liczba 1 oraz jak najmniejszą mantysę.
+Maszynowe epsilon zależy od podstawy systemu  $\beta$ i precyzji $p$. Wyraża się
+wzorem:
+
+$$\epsilon = \beta ^ {1-p}$$
+
+Maszynowe epsilon można również obliczyć poprzez dzielenie zmiennej $a$
+której początkowa wartość to $1$ przez podstawę systemu. Ostatnia wartość
+$a$ która spełnia warunek $a + 1 > 1$ jest maszynowym epsilon.
+
+
+#+begin_src julia :exports none :results output
+eps(Float32)
+2 ^ (-23)
+eps(Float64)
+2^(-52)
+#+end_src
+
+#+RESULTS:
+: 1.1920929f-7
+: 1.1920928955078125e-7
+: 2.220446049250313e-16
+: 2.220446049250313e-16
+
+* Problem ewaluacji funkcji $\sin(x)$
+Rozważamy problem ewaluacji funkcji $\sin(x)$, m.in. propagację błędu danych wejściowych, tj. błąd wartości funkcji ze względu na zakłócenie $h$ w argumencie $x$.
+
+** Błąd bezwzględny przy ewaluacji $\sin(x)$
+$$\Delta \sin(x) = |\sin(x + h) - \sin(x)|$$
+** Błąd względny przy ewaluacji $\sin(x)$
+$$ \frac{\Delta \sin(x)}{ \sin x} = \frac{|\sin(x + h) - \sin(x)|}{\sin x}$$
+** Uwarunkowanie
+
+$$\text{cond}(f(x)) = \left| \frac{x \cdot f'(x)}{f(x)} \right|$$
+
+$$\text{cond}(\sin(x)) = \left| \frac{x \cdot \cos(x)}{\sin(x)} \right| = |x \cot x|$$
+#+begin_src python :results graphics file output :file graph.png :exports results :eval no
+   import numpy as np
+   import matplotlib.pyplot as plt
+   import scienceplots
+
+   plt.style.use('science')
+
+   fig, ax = plt.subplots(1, 1, figsize=(7, 4), dpi=300)
+   x = np.linspace(-10, 10, 1000)
+   y = np.abs(1/np.tan(x)*x)
+   ax.plot(x, y, label=r'$y = |x \cot  x|$', color='green')
+
+   ax.set_xlim([-10, 10])
+   ax.set_ylim([-0, 10])
+
+   ax.spines['left'].set_position('zero')
+   ax.spines['bottom'].set_position('zero')
+   ax.spines['right'].set_color('none')
+   ax.spines['top'].set_color('none')
+
+   ax.xaxis.set_ticks_position('bottom')
+   ax.yaxis.set_ticks_position('left')
+
+   xticks = [ -2.5*np.pi,-2*np.pi, -1.5*np.pi,  -np.pi, -1/2*np.pi,  0, 1/2*np.pi, np.pi, 3/2*np.pi, 2*np.pi, 5/2*np.pi]
+   yticks = [ 5,  10]
+   ax.set_xticks(xticks)
+   ax.set_yticks(yticks)
+   xtick_labels = [r'$-\frac{5}{2}\pi$',
+                       r'$-2\pi$',
+                       r'$-\frac{3}{2}\pi$'r'$-\pi$',
+                       r'$-\pi$',
+                       r'$-\frac{1}{2}\pi$',
+                       '0' ,
+                       r'$\frac{1}{2}\pi$',
+                       r'$\pi$',
+                       r'$\frac{3}{2}\pi$',
+                       r'$2\pi$',
+                       r'$\frac{5}{2}\pi$']
+   ax.set_xticklabels(xtick_labels)
+   ax.set_yticklabels([str(y) for y in yticks ])
+   fig.legend()
+#+end_src
+#+caption: Wykres funkcji będącej współczynnikiem uwarunkowania dla problemu obliczania funkcji $\sin x$
+#+results:
+[[file:graph.png]]
+** Ocena czułości problemu
+Problem jest bardzo czuły w miejscach, gdzie $\cot x$ zbiega do $\infty$. Są to liczby
+postaci $x = k\pi$, gdzie $k$ jest liczbą całkowitą z wyjątkiem $0$. Problem jest
+bardzo dobrze uwarunkowany w miejscach w których $\cos x$ przyjmuje wartość 0.
+Są to liczby postaci $x = k \pi  + \frac{\pi}{2}$, gdzie $k$ jest liczbą całkowitą.
+** Wnioski
+Problem ewaluacji $\sin x$ jest najgorzej uwarunkowany w otoczeniu miejsc
+zerowych tej funkcji. Problem jest jednocześnie najlepiej uwarunkowany w
+otoczeniu  ekstremów lokalnych funkcji $\sin x$.
+
+* Różne rodzaje błędów podczas obliczania $\sin x$
+Funkcja $\sin x$ zadana jest nieskończonym ciągiem:
+$$
+\sin(x) = x - \frac{x^3}{3!} + \frac{x^5}{5!} - \frac{x^7}{7!} + \dots
+$$
+
+\begin{align*}
+ \text{Błąd progresywny}\quad \Delta y &= |  \hat{y} -y| \\
+ \text{Błąd wsteczny}\quad \Delta x &= | \hat{x} - x|, \quad \text{gdzie} \quad f(\hat{x}) = \hat{y}
+\end{align*}
+
+
+** Błąd progresywny i wsteczny przy przybliżeniu $\sin x \approx x$
+\begin{align*}
+ \text{Błąd progresywny}\quad \Delta y &= | x - \sin x| \\
+ \text{Błąd wsteczny}\quad \Delta x &= |\arcsin{\hat{y}} - y| = |\arcsin x - \sin x|
+\end{align*}
+
+
+#+begin_src python :exports results  :eval yes :wrap export latex
+import pandas as pd
+import numpy as np
+
+xs = np.array([0.1, 0.5, 1])
+df = pd.DataFrame(index=xs)
+df.index.name ='$x$'
+df['x'] = xs
+df['y'] = np.sin(xs)
+df['hat y'] = xs
+df['f err'] = np.abs(df['hat y'] - df['y'])
+df['hat x'] = np.arcsin(df['hat y'])
+df['b err'] = np.abs(df['hat x'] - xs)
+
+latex_column_names = {
+    'x': '$x$',
+    'y': r'$y = \sin(x)$',
+    'hat y': r'$\hat{y} = x$',
+    'f err': r'$\Delta y = |\hat{y} - y|$',
+    'hat x': r'$\hat{x} = \arcsin\hat{y}$',
+    'b err': r'$\Delta x = |\hat{x} - x|$',
+}
+
+df_latex = df.rename(columns=latex_column_names)
+
+latex_table = df_latex.to_latex(
+    index=False,
+    header=True,
+    column_format='l' + 'c' * len(df.columns),
+    float_format="%.8f",
+    escape=False,
+    longtable=False,
+    bold_rows=False,
+    caption="Wartości błędu progresywnego i wstecznego jeśli przybliżamy"
+    r"funkcję $\sin x \approx x$",
+)
+return latex_table.replace(r'\begin{table}', r'\begin{table}[H]')
+
+#+end_src
+
+#+RESULTS:
+#+begin_export latex
+\begin{table}[H]
+\caption{Wartości błędu progresywnego i wstecznego jeśli przybliżamyfunkcję $\sin x \approx x$}
+\begin{tabular}{lcccccc}
+\toprule
+$x$ & $y = \sin(x)$ & $\hat{y} = x$ & $\Delta y = |\hat{y} - y|$ & $\hat{x} = \arcsin\hat{y}$ & $\Delta x = |\hat{x} - x|$ \\
+\midrule
+0.10000000 & 0.09983342 & 0.10000000 & 0.00016658 & 0.10016742 & 0.00016742 \\
+0.50000000 & 0.47942554 & 0.50000000 & 0.02057446 & 0.52359878 & 0.02359878 \\
+1.00000000 & 0.84147098 & 1.00000000 & 0.15852902 & 1.57079633 & 0.57079633 \\
+\bottomrule
+\end{tabular}
+\end{table}
+#+end_export
+
+** Błąd progresywny i wsteczny przy przybliżeniu $\sin x \approx x -\frac{x^3}{6}$
+\begin{align*}
+ \text{Błąd progresywny}\quad \Delta y &= | x - \frac{x^3}{6} - \sin x| \\
+ \text{Błąd wsteczny}\quad \Delta x &= \left| \arcsin \left(x - \frac{x^3}{6} \right) - \sin x \right|
+\end{align*}
+
+#+begin_src python :exports results  :eval yes :wrap export latex
+import pandas as pd
+import numpy as np
+
+xs = np.array([0.1, 0.5, 1])
+df = pd.DataFrame(index=xs)
+df.index.name ='$x$'
+df['x'] = xs
+df['y'] = np.sin(xs)
+df['hat y'] = xs - xs**3 /6
+df['f err'] = np.abs(df['hat y'] - df['y'])
+df['hat x'] = np.arcsin(df['hat y'])
+df['b err'] = np.abs(df['hat x'] - xs)
+
+latex_column_names = {
+    'x': '$x$',
+    'y': r'$y = \sin(x)$',
+    'hat y': r'$\hat{y} = x - \frac{x^3}{6}$',
+    'f err': r'$\Delta y = |\hat{y} - y|$',
+    'hat x': r'$\hat{x} = \arcsin\hat{y}$',
+    'b err': r'$\Delta x = |\hat{x} - x|$',
+}
+
+df_latex = df.rename(columns=latex_column_names)
+
+latex_table = df_latex.to_latex(
+    index=False,
+    header=True,
+    column_format='l' + 'c' * len(df.columns),
+    float_format="%.8f",
+    escape=False,
+    longtable=False,
+    bold_rows=False,
+    caption="Wartości błędu progresywnego i wstecznego jeśli przybliżamy"
+    r"funkcję $\sin x \approx x - \frac{x^3}{6}$",
+)
+return latex_table.replace(r'\begin{table}', r'\begin{table}[H]')
+#+end_src
+
+#+RESULTS:
+#+begin_export latex
+\begin{table}[H]
+\caption{Wartości błędu progresywnego i wstecznego jeśli przybliżamyfunkcję $\sin x \approx x - \frac{x^3}{6}$}
+\begin{tabular}{lcccccc}
+\toprule
+$x$ & $y = \sin(x)$ & $\hat{y} = x - \frac{x^3}{6}$ & $\Delta y = |\hat{y} - y|$ & $\hat{x} = \arcsin\hat{y}$ & $\Delta x = |\hat{x} - x|$ \\
+\midrule
+0.10000000 & 0.09983342 & 0.09983333 & 0.00000008 & 0.09999992 & 0.00000008 \\
+0.50000000 & 0.47942554 & 0.47916667 & 0.00025887 & 0.49970504 & 0.00029496 \\
+1.00000000 & 0.84147098 & 0.83333333 & 0.00813765 & 0.98511078 & 0.01488922 \\
+\bottomrule
+\end{tabular}
+\end{table}
+#+end_export
+** Wnioski
+Przybliżenie z większą ilością wyrazów szeregu powoduje znaczące zmniejszenie błędu
+zarówno progresywnego jak i wstecznego. Możemy się spodziewać, że im więcej wyrazów
+weźmiemy tym dokładniejszy wynik uzyskamy.
+* Znormalizowany system zmiennoprzecinkowy
+Zakładamy że mamy znormalizowany system zmiennoprzecinkowy z $\beta = 10$, $p = 3$, $L = -98$.
+
+** Wartość poziomu UFL(underflow) dla takiego systemu.
+Wartość poziomu UFL to najmniejsza liczba dodatnia, jaka może zostać zapisana w
+danym systemie.  System jest znormalizowany zatem mantysa takiej liczby będzie
+równa 1. Najmniejszy wykładnik jaki możemy uzyskać w naszym systemie jest równy
+$L = -98$.  Zatem
+$$ \text{UFL} = \beta ^ L = 10^{-98} $$
+** Wynik $x - y$
+$x = 6.87 \cdot 10^{-97}$ $y = 6.81 \cdot 10^{-97}$
+
+$$ x - y = 6 \cdot 10^{-99} < \text{UFL}  \implies x - y = 0$$
+
+Wynik operacji $x-y$ w takim systemie wyniesie $0$.
+** Wnioski
+UFL jest miarą dokładności systemu zmiennoprzecinkowego. Aby system mógł sobie radzić
+z małymi liczbami parametr $L$ takiego systemu powinien być możliwe jak najmniejszy.
+* Bibliografia
++ Prof. Michael T. Heath: /Scientific Computing: An Introductory Survey Chapter 1 – Scientific Computing/
++ https://pl.wikipedia.org/wiki/IEEE_754
++ https://en.wikipedia.org/wiki/Machine_epsilon
