@@ -1,18 +1,7 @@
 #+title: Laboratorium 2 - Arytmetyka Komputerowa(cd.)
 #+author: Piotr Karamon
 #+date: 17.03.2024r.
-#+language: pl
-#+options: num:nil toc:nil
-#+latex_header: \usepackage[polish]{babel}
-#+latex_header: \usepackage[T1]{fontenc}
-#+latex_header: \usepackage[utf8]{inputenc}
-#+latex_header: \selectlanguage{polish}
-#+latex_header: \usepackage{caption}
-#+latex_header: \usepackage{booktabs}
-#+latex_header: \captionsetup{labelfont=bf}
-#+latex_header: \usepackage{float}
-#+property: header-args:rust :exports both :results output :wrap example :eval no
-#+latex-engraved-theme: modus-operandi
+#+setupfile: ../setupfile.org
 
 * Treści zadań
 1. Napisać algorytm do obliczenia funkcji wykładniczej e^x przy pomocy nieskończonych szeregów

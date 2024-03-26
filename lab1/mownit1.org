@@ -1,16 +1,7 @@
 #+title: Zestaw 1 - Arytmetyka komputerowa
 #+author: Piotr Karamon
 #+date:
-#+language: pl
-#+options: toc:nil
-#+latex_header: \usepackage[polish]{babel}
-#+latex_header: \usepackage[T1]{fontenc}
-#+latex_header: \usepackage[utf8]{inputenc}
-#+latex_header: \selectlanguage{polish}
-#+latex_header: \usepackage{caption}
-#+latex_header: \usepackage{booktabs}
-#+latex_header: \captionsetup{labelfont=bf}
-#+latex_header: \usepackage{float}
+#+setupfile: ../setupfile.org
 
 
 * Znaleźć maszynowe epsilon
