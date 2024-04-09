@@ -1,0 +1,626 @@
+#+title: Laboratorium 4 - Aproksymacja
+#+date: 09.04.2024r.
+#+author: Piotr Karamon
+#+setupfile: ../setupfile.org
+#+LATEX_HEADER: \usepackage[left=2.5cm,right=2.5cm,top=3.5cm,bottom=2.5cm]{geometry}
+
+* Treści zadań
+** Zadania
+1. Aproksymować funkcję $f(x) = 1 + x^3$ w przedziale $[0,1]$ wielomianem
+  pierwszego stopnia metodą średnio-kwadratową ciągłą dla $w(x)=1$.
+2. Aproksymować funkcję $f(x) = 1 + x^3$ w przedziale $[0,1]$ wielomianem stopnia
+   drugiego przy użyciu wielomianów Legendre’a.
+** Zadania domowe
+1. Napisz procedurę realizującą metodę aproksymacji punktowej za pomocą
+  wielomianów drugiego stopnia
+2. Oblicz wartości funkcji $f(x)= 1-x^2$ w dyskretnych punktach $x_i=-1+0.5*i$,
+     $i=0..4$, a następnie aproksymuj funkcję wielomianami Grama stopnia trzeciego
+3. Wykonać aproksymację funkcję $|sin(x)|$ funkcjami trygonometrycznymi w
+   zakresie $[-\pi, \pi]$.
+* Zadanie 1
+$f(x) = 1 + x^3$ przedział  $[0,1]$ i $w(x) = 1$
+
+Baza ma postać: $\varphi_0(x) = 1$, $\varphi_1(x) = x$
+
+Mamy zminimalizować wartość całki.
+
+$$H = \int^1_0 w(x)[f(x) - q(x)]^2dx =\int_0^1 [1 + x^3 - (c_0 + c_1x)]^2 dx$$
+
+Tworzymy układ równań:
+
+$$\sum_{i=0}^n c_i \int_a^b w(x) \varphi_i(x)\cdot \varphi_j(x)dx = \int_0^1 w(x)f(x)\varphi_j(x)dx, \, j=0,1\dots ,n$$
+$$\sum_{i=0}^1 c_i \int_0^1 \varphi_i(x)\cdot \varphi_j(x)dx = \int_0^1 (1+x^3)\varphi_j(x)dx, \, j=0,1$$
+
+
+
+\begin{align*}
+c_0 \int_0^1 1 dx + c_1 \int_0^1 x dx &= \int_0^1 (1+x^3)dx \\
+c_0 \int_0^1 x dx + c_1 \int_0^1 x^2 dx &= \int_0^1 (x+x^4)dx
+\end{align*}
+
+Wartości całek:
+\begin{align*}
+\int_0^1 dx &= 1 \\
+\int_0^1 x \, dx &= \frac{1}{2} \\
+\int_0^1 x^2 \, dx &= \frac{1}{3} \\
+\int_0^1 (1 + x^3) \, dx &= \frac{5}{4} \\
+\int_0^1 (x + x^4) \, dx &= \frac{7}{10}
+\end{align*}
+
+
+\begin{align*}
+1c_0 + \frac{1}{2}c_1 &= \frac{5}{4}\\
+\frac{1}{2}c_0 + \frac{1}{3}c_1 &= \frac{7}{10}\\
+\end{align*}
+
+
+Rozwiązaniem układu jest para
+\begin{align*}
+c_0 &= \frac{4}{5} \\
+c_1 &= \frac{9}{10}
+\end{align*}
+
+Czyli
+$$q(x) = \frac{9}{10}x + \frac{4}{5}$$
+
+
+#+begin_src python :results graphics file output :file 1.png :exports results
+import numpy as np
+import matplotlib.pyplot as plt
+import scienceplots
+
+plt.style.use('science')
+
+draw_n = 1000
+x = np.linspace(0, 1, draw_n)
+f = 1 + x**3
+q = 9/10*x + 4/5
+
+fig, ax = plt.subplots(1, 1, figsize=(6, 4), dpi=300)
+ax.plot(x, f, label='$f(x) = 1+x^3$')
+ax.plot(x, q, '--', label=r'$q(x) = \frac{9}{10}x + \frac{4}{5}$')
+
+
+fig.legend(loc='upper right', bbox_to_anchor=(0.4, 0.85), ncol=1)
+#+end_src
+
+#+ATTR_LATEX: :placement [H]
+#+RESULTS:
+[[file:1.png]]
+
+*Wnioski*: Funkcja $f(x)$ nie jest zbyt dobrze przybliżana za pomocą aproksymacji
+wielomianem pierwszego stopnia na przedziale $[0,1]$. Co jest spodziewane,
+ponieważ chcemy jak najlepiej dopasować prostą do wielomianu trzeciego stopnia.
+Jednakże widzimy, że różnica pomiędzy $f(x)$ i $q(x)$ często nie przekracza 0.2,
+więc widać, że tą metodą otrzymaliśmy sensowny wynik.
+* Zadanie 2
+$f(x) = 1 + x^3$ przedział  $[0,1]$ i $w(x) = 1$
+
+Baza ma postać:
+\begin{align*}
+\varphi_0(x) &= 1\\
+\varphi_1(x) &= x \\
+\varphi_2(x) &= \frac{1}{2}(3x^2 - 1)\\
+\end{align*}
+
+
+Tworzymy układ równań:
+$$\sum_{i=0}^n c_i \int_a^b w(x) \varphi_i(x)\cdot \varphi_j(x)dx = \int_0^1 w(x)f(x)\varphi_j(x)dx, \, j=0,1\dots ,n$$
+$$\sum_{i=0}^2 c_i \int_0^1 \varphi_i(x)\cdot \varphi_j(x)dx = \int_0^1 (1+x^3)\varphi_j(x)dx, \, j=0,1,2$$
+
+Liczymy wartości całek:
+#+begin_src python :results output :wrap export latex :exports results :session legendre
+import sympy as sp
+x = sp.symbols('x')
+a = 0
+b = 1
+
+P_0 = 1
+P_1 = x
+P_2 = sp.Rational(1,2)*(3*x**2 - 1)
+
+f = 1+x**3
+
+base = [P_0, P_1, P_2]
+
+print(r'\begin{align*}')
+for i in range(len(base)):
+    for j in range(i, len(base)):
+        int = sp.integrate(base[i]*base[j], (x, a, b))
+        print(fr'\int_{a}^{b} \varphi_{i}(x) \cdot \varphi_{j} (x) dx &= \int_{a}^{b} {sp.latex(sp.factor(base[i]*base[j]))} dx &= {sp.latex(int)}\\')
+
+
+
+for i in range(len(base)):
+    int = sp.integrate(f*base[i], (x, a, b))
+    print(fr'\int_{a}^{b} (1+x^3) \varphi_{i}(x)dx &= \int_{a}^{b} {sp.latex((base[i]*f))} dx &= {sp.latex(int)}\\')
+
+
+print(r'\end{align*}')
+
+#+end_src
+
+#+RESULTS:
+#+begin_export latex
+\begin{align*}
+\int_0^1 \varphi_0(x) \cdot \varphi_0 (x) dx &= \int_0^1 1 dx &= 1\\
+\int_0^1 \varphi_0(x) \cdot \varphi_1 (x) dx &= \int_0^1 x dx &= \frac{1}{2}\\
+\int_0^1 \varphi_0(x) \cdot \varphi_2 (x) dx &= \int_0^1 \frac{3 x^{2} - 1}{2} dx &= 0\\
+\int_0^1 \varphi_1(x) \cdot \varphi_1 (x) dx &= \int_0^1 x^{2} dx &= \frac{1}{3}\\
+\int_0^1 \varphi_1(x) \cdot \varphi_2 (x) dx &= \int_0^1 \frac{x \left(3 x^{2} - 1\right)}{2} dx &= \frac{1}{8}\\
+\int_0^1 \varphi_2(x) \cdot \varphi_2 (x) dx &= \int_0^1 \frac{\left(3 x^{2} - 1\right)^{2}}{4} dx &= \frac{1}{5}\\
+\int_0^1 (1+x^3) \varphi_0(x)dx &= \int_0^1 x^{3} + 1 dx &= \frac{5}{4}\\
+\int_0^1 (1+x^3) \varphi_1(x)dx &= \int_0^1 x \left(x^{3} + 1\right) dx &= \frac{7}{10}\\
+\int_0^1 (1+x^3) \varphi_2(x)dx &= \int_0^1 \left(\frac{3 x^{2}}{2} - \frac{1}{2}\right) \left(x^{3} + 1\right) dx &= \frac{1}{8}\\
+\end{align*}
+#+end_export
+
+Układ przyjmuje postać:
+\begin{align*}
+1c_0 + \frac{1}{2}c_1 + 0c_2 &= \frac{5}{4} \\
+\frac{1}{2}c_0 + \frac{1}{3}c_1 + \frac{1}{8}c_2 &= \frac{7}{10} \\
+0c_0 + \frac{1}{8}c_1 + \frac{1}{5}c_2 &= \frac{1}{8}
+\end{align*}
+
+#+begin_src python :results output :exports none :eval no
+import numpy as np
+
+A = np.array([
+    [1, 0.5, 0],
+    [0.5, 1/3, 1/8],
+    [0, 1/8, 1/5],
+])
+b = np.array([5/4, 7/10, 1/8])
+
+print(np.linalg.solve(A, b))
+#+end_src
+
+#+RESULTS:
+: [ 1.55 -0.6   1.  ]
+: 1.55
+
+Rozwiązaniem jest trójka liczb:
+\begin{align*}
+c_0 &= \frac{31}{20} \\
+c_1 &= -\frac{3}{5} \\
+c_2 &= 1
+\end{align*}
+
+Zatem:
+#+begin_src python :session legendre :results output :exports results :wrap export latex
+print(r'\begin{equation*}')
+q = sp.Rational(31, 20)*base[0] + sp.Rational(-3,5) *base[1] + sp.Rational(1,1) *base[2]
+print(f'q(x) = {sp.latex(q)}')
+q = sp.expand(q)
+print(r'\end{equation*}')
+#+end_src
+
+#+RESULTS:
+#+begin_export latex
+\begin{equation*}
+q(x) = \frac{3 x^{2}}{2} - \frac{3 x}{5} + \frac{21}{20}
+\end{equation*}
+#+end_export
+
+
+#+begin_src python :results graphics file output :file 2.png :exports results
+import numpy as np
+import matplotlib.pyplot as plt
+import scienceplots
+
+plt.style.use('science')
+
+draw_n = 1000
+x = np.linspace(0, 1, draw_n)
+f = 1 + x**3
+q = 3/2*x**2 - 3/5*x + 21/20
+
+fig, ax = plt.subplots(1, 1, figsize=(6, 4), dpi=300)
+ax.plot(x, f, label='$f(x) = 1+x^3$')
+ax.plot(x, q, '--', label=r'$q(x) = \frac{3 x^{2}}{2} - \frac{3 x}{5} + \frac{21}{20}$')
+
+
+fig.legend(loc='upper right', bbox_to_anchor=(0.45, 0.85), ncol=1)
+#+end_src
+
+#+RESULTS:
+[[file:2.png]]
+
+
+*Wnioski*: Funkcja $f(x)$, jak widać z wykresu, jest dobrze przybliżana wielomianem
+stopnia dwa przy użyciu wielomianów Legendre'a na przedziale $[0,1]$.
+Baza której użyliśmy w tym zadaniu była bogatsza od tej użytej w zadaniu 1,
+dzięki temu mogliśmy lepiej dopasować funkcję aproksymującą. Aproksymując
+funkcję powinniśmy używać odpowiednich funkcji bazowych dla niej.
+* Zadanie domowe 1
+$x_i, y_i = f(x_i)\, i=0,1,\dots,n$ czyli mamy $n+1$ węzłów interpolacji
+
+
+Funkcje bazowe:
+\begin{align*}
+\varphi_0(x) &= 1 \\
+\varphi_1(x) &= x \\
+\varphi_2(x) &= x^2 \\
+\end{align*}
+
+Chcemy zminimalizować funkcję $H$
+$$H = \sum_{i=0}^{n} w(x_i)\left[f(x_i) - \sum_{j=0}^2 c_j \varphi_j(x_i) \right]^2$$
+
+$$\frac{\partial H}{\partial c_k} =-2\cdot \sum_{i=0}^n w(x_i)  \left[ f(x_i) - \sum_{j=0}^2 c_j \varphi_j(x_i) \right] \cdot\varphi_k(x) = 0 $$
+
+$$\sum_{i=0}^n w(x_i) \left[ f(x_i) - \sum_{j=0}^2 c_j \varphi_j(x_i) \right] \cdot\varphi_k(x) = 0 $$
+$$  \sum_{j=0}^2 \sum_{i=0}^n w(x_i)\cdot c_j \cdot \varphi_j(x_i)\cdot \varphi_k(x) = \sum_{i=0}^n w(x_i)f(x_i)\varphi_k(x) $$
+
+$$  \sum_{j=0}^2 \left(\sum_{i=0}^n w(x_i)\cdot x_i^{j+k}\right)c_j  = \sum_{i=0}^n w(x_i)y_i x_i^{k}, \, k=0,1,2 $$
+
+$$g_{k,j} = \sum_{i=0}^n w(x_i)\cdot x_i^{j+k}$$
+$$b_{k} = \sum_{i=0}^n w(x_i)y_i x_i^{k}$$
+
+Procedura będzie zrealizowana przy użyciu języka Python i biblioteki NumPy.
+#+begin_src python :results code :session approx :results output
+import numpy as np
+
+def approx(x, y, w=None):
+    m = 3
+    if len(x) < m:
+        raise ValueError(f"not enough data points, must be at least {m}")
+
+    if w is None:
+        w = np.ones(x.shape)
+
+    G = np.zeros((m, m))
+    for k in range(m):
+        for j in range(m):
+            G[k, j] = np.sum(w * x**(k+j))
+
+    b = np.zeros(m)
+    for k in range(m):
+        b[k] = np.sum(w * y * x**k)
+
+    coeffs = np.linalg.solve(G, b)
+    return coeffs
+#+end_src
+
+#+RESULTS:
+#+begin_src python
+#+end_src
+
+Jest to proste zastosowanie wzór wyprowadzonych powyżej oraz użycie funkcji
+=solve= która rozwiązuje układ równań. W przypadku nie podania wag $w$ ustawiamy
+je na $1$.
+
+Teraz pora na testy:
+
+
+#+begin_src python :session approx :results graphics file output :file 1dom.png :exports results
+import math
+import numpy as np
+import matplotlib.pyplot as plt
+import scienceplots
+
+plt.style.use('science')
+
+N_KNOTS = 7
+
+funcs = [
+    (r'1+x^3', lambda x: 1+x**3, (0, 1)),
+    (r'\sin x', lambda x: np.sin(x), (0, np.pi)),
+    (r'\cos x', lambda x: np.cos(x), (0, np.pi/2)),
+    (r'\frac{1}{x}', lambda x: 1/x,  (1/10, 1/2)),
+    (r'\cos x', lambda x: np.cos(x), (0, 2*np.pi)),
+    (r'e^x', lambda x: np.e**x, (0,5)),
+    (r'\arcsin x', lambda x: np.arcsin(x), (-1,1)),
+    (r'e^{-x^2}', lambda x: np.e**(-x**2), (-1,1)),
+]
+
+
+fig, axes = plt.subplots(math.ceil(len(funcs)/2), 2, figsize=(8, 8), dpi=300)
+
+for ax, (label, f, (a, b)) in zip(axes.flatten(), funcs):
+    x = np.linspace(a, b, N_KNOTS)
+    y = f(x)
+
+    ax.scatter(x, y, s=7)
+
+    coeffs = approx(x, y)
+
+    x = np.linspace(a, b, 1000)
+    y = f(x)
+    p = np.poly1d(coeffs[::-1])
+
+    ax.plot(x, y,  label=f'${label}$')
+
+    coeffs = p.coefficients
+
+    latex_poly = ""
+    for i, coeff in enumerate(coeffs):
+        if i != 0 and coeff >= 0:
+            latex_poly += r" + "
+        power = len(coeffs) - i - 1
+        if power > 0:
+            if coeff == -1:
+                latex_poly += r"-"
+            elif coeff != 1:
+                latex_poly += f"{coeff:.2f}"
+            if power == 1:
+                latex_poly += r"x"
+            else:
+                latex_poly += r"x^{" + f"{power}" + r"}"
+        else:
+            latex_poly += f"{coeff:.2f}"
+
+    ax.plot(x, p(x), '--', label=f'$q(x) = {latex_poly}$')
+    ax.legend()
+plt.tight_layout()
+#+end_src
+
+#+CAPTION: Aproksymacja punktowa różnych funkcji za pomocą wielomianów drugiego stopnia. W każdym przypadku użyto 7 równoodległych węzłów. Funkcja wagowa $w(x) =1$.
+#+ATTR_LATEX: :placement [H]
+#+RESULTS:
+[[file:1dom.png]]
+
+
+Sprawdzamy teraz działanie wag. Będziemy aproksymować funkcję
+
+$$f(x) =
+\begin{cases}
+3x^3 + 2x^2 - x + 1 & \text{dla } x \in [-1,0), \\
+e^x & \text{dla } x \in [0, 1).
+\end{cases}$$
+
+Funkcja wagowa ma następującą postać:
+$$w(x) =
+\begin{cases}
+1 & \text{dla } x \in [-1,0), \\
+2 & \text{dla } x \in [0, 1).
+\end{cases}$$
+
+
+#+begin_src python :session approx :results graphics file output :file 1zadweights.png :exports results
+fig, ax = plt.subplots(1,1,figsize=(6,4), dpi=300)
+
+y_f =lambda x: np.piecewise(x, [x <0, x>=0],
+                        [lambda x: 3*x**3 + 2*x**2 - x +1,
+                        lambda x: np.e**(x)])
+
+
+x = np.linspace(-1, 1, 7)
+y = y_f(x)
+w = np.piecewise(x, [x<0, x>=0], [1,2])
+ax.scatter(x, y, s=7)
+
+coeffs = approx(x, y, w)
+
+x = np.linspace(-1, 1, 1000)
+y = y_f(x)
+p = np.poly1d(coeffs[::-1])
+
+ax.plot(x, y, label='f')
+
+coeffs = p.coefficients
+
+latex_poly = ""
+for i, coeff in enumerate(coeffs):
+    if i != 0 and coeff >= 0:
+        latex_poly += r" + "
+    power = len(coeffs) - i - 1
+    if power > 0:
+        if coeff == -1:
+            latex_poly += r"-"
+        elif coeff != 1:
+            latex_poly += f"{coeff:.2f}"
+        if power == 1:
+            latex_poly += r"x"
+        else:
+            latex_poly += r"x^{" + f"{power}" + r"}"
+    else:
+        latex_poly += f"{coeff:.2f}"
+
+
+ax.plot(x, p(x), '--', label=f'$q(x) = {latex_poly}$')
+ax.legend()
+#+end_src
+
+#+ATTR_LATEX: :placement [H]
+#+RESULTS:
+[[file:1zadweights.png]]
+
+
+Jak widać funkcja aproksymująca jest o wiele lepiej dopasowana dla $x \in [0,1]$,
+niż dla $x\in [-1,0)$.
+
+*Wnioski*: Ta prosta metoda aproksymacji daje całkiem imponujące wyniki.  Metoda
+działa najlepiej na małych przedziałach gdzie funkcja jest monotoniczna.  Możemy
+dopasować jedynie wielomian stopnia drugiego, więc próba aproksymacji funkcji
+$\cos x$ na przedziale $[0,2\pi]$ nie jest udana, tak samo jak z funkcją $e^x$ na
+przedziale $[0,5]$.
+* Zadanie domowe 2
+$f(x) = 1-x^2$
+
+#+begin_src python :results output :exports none
+import numpy as np
+x =np.linspace(-1, 1, 5)
+y = (1-x**2)
+print(y)
+#+end_src
+
+#+RESULTS:
+: [0.   0.75 1.   0.75 0.  ]
+
+Węzły:
+
+
+| $i$ | $x_i$ | $y_i$ |
+|-----+-------+-------|
+|   0 |    -1 |     0 |
+|   1 |  -0.5 |  0.75 |
+|   2 |     0 |    1. |
+|   3 |   0.5 |  0.75 |
+|   4 |   1.0 |     0 |
+
+
+Funkcja aproksymująca zbudowana na wielomianach Grama ma postać
+\[ y_m(x) = \sum_{k=0}^{m} \frac{c_k}{s_k} F_k^{(n)}(q) . \]
+
+gdzie:
+\[ s_k = \sum_{q=0}^{n} \left( F_k^{(n)}(q) \right)^2 , \]
+\[ c_k = \sum_{i=0}^{n} y_i F_k^{(n)}(x_i), \]
+
+\[ q = \frac{x - x_0}{h} \quad \text{punkty są równoodległe} \quad x_i = x_0 + ih \quad i = 0,1,\ldots,n \]
+\[ F_k^{(n)}(q) = \sum_{s=0}^{k} (-1)^s \binom{k}{s} \binom{k+s}{s} \frac{q^{[s]}}{n^{[s]}} \quad \text{wielomiany Grama} \]
+\[ r^{[s]} = r(r-1) \ldots (r-s+1) \]
+
+Wielomiany te do stopnia trzeciego mają postać:
+
+\begin{align*}
+F_0^{(n)}(q) &= 1 \\
+F_1^{(n)}(q) &= 1 - 2\frac{q}{n} \\
+F_2^{(n)}(q) &= 1 - 6\frac{q}{n} + 6 \frac{q(q-1)}{n(n-1)} \\
+F_3^{(n)}(q) &= 1 - 12\frac{q}{n} + 30 \frac{q(q-1)}{n(n-1)} - 20 \frac{q(q-1)(q-2)}{n(n-1)(n-2)} \\
+\end{align*}
+
+Podstawiamy $n=4$ i $q = \frac{x-x_0}{h} =2x + 2$
+
+\begin{align*}
+F_0^{(4)}(x) &= 1 \\
+F_1^{(4)}(x) &=  -x \\
+F_2^{(4)}(x) &= -1 + 2x^2  \\
+F_3^{(4)}(x) &= \frac{17}{3}x - \frac{20}{3} x^3\\
+\end{align*}
+
+
+#+begin_src python :results output :wrap example :exports both
+from sympy import symbols, expand, Rational
+
+xs = []
+x,q = symbols('x q')
+
+F_0 = expand(1)
+F_1 = -x
+F_2 = -1 + 2*x**2
+F_3 = Rational(17,3)*x - Rational(20,3)*x**3
+
+Fs = [F_0, F_1, F_2, F_3]
+Fqs = [expand(f.subs(x, (q-2)/2))  for f in Fs]
+
+xs = [-1, -0.5, 0, 0.5, 1.0,]
+ys = [0, 0.75, 1., 0.75, 0]
+
+for k in range(4):
+    s_k = sum((Fqs[k].subs(q, value))**2 for value in range(5))
+    c_k = sum( y_val*Fs[k].subs(x, x_val) for y_val, x_val in zip(ys,xs))
+    print(f'c_{k}/s_{k} = {c_k/s_k}')
+#+end_src
+
+#+RESULTS:
+#+begin_example
+c_0/s_0 = 0.500000000000000
+c_1/s_1 = 0
+c_2/s_2 = -0.500000000000000
+c_3/s_3 = 0
+#+end_example
+
+Podstawiamy
+
+$$y(x) = 0.5\cdot(1) -0.5\cdot(-1+2x^2) = -x^2 + 1$$
+
+*Wnioski*: Funkcja którą uzyskaliśmy jest dokładnie taka sama jak zadana funkcja
+do aproksymacji.  Jest to spodziewane, ponieważ aproksymujemy wielomian drugiego
+stopnia oraz nasza baza  generuje wielomiany stopnia drugiego a nawet trzeciego.
+Jest to przykład pokazujący słuszność pokazanej metody, uzyskana aproksymacja
+bowiem ma zerowy błąd.
+* Zadanie domowe 3
+Trygonometrycznym szeregiem Fouriera funkcji \( f \) nazywamy szereg funkcyjny następującej postaci:
+\begin{equation*}
+S(x) = \frac{a_0}{2} + \sum_{n=1}^{\infty} \left( a_n \cos \left( \frac{2n\pi}{T} x \right) + b_n \sin \left( \frac{2n\pi}{T} x \right) \right)
+\end{equation*}
+o współczynnikach określonych następującymi wzorami:
+\begin{equation*}
+a_n = \frac{2}{T} \int_{-\frac{T}{2}}^{\frac{T}{2}} f(x) \cos \left( \frac{2n\pi}{T} x \right) \, dx, \quad n = 0,1,2,\ldots,
+\end{equation*}
+\begin{equation*}
+b_n = \frac{2}{T} \int_{-\frac{T}{2}}^{\frac{T}{2}} f(x) \sin \left( \frac{2n\pi}{T} x \right) \, dx, \quad n = 1,2,3,\ldots.
+\end{equation*}
+
+
+Funkcja $f(x) = \sin x$ spełnia warunki Dirichleta na przedziale $[-\pi, \pi]$.
+Jest ona również funkcją parzystą zatem $b_n = 0, \; n=0,1,2,\dots$ .
+Zatem:
+\begin{equation*}
+a_n = \frac{2}{\pi} \int_{0}^{\pi} \sin x \cos \left( n x \right) \, dx, \quad n = 0,1,2,\ldots,
+\end{equation*}
+
+
+#+begin_src python :results output  :exports none :wrap export latex
+from sympy import symbols, integrate, pi, sin, cos, Rational, latex
+x = symbols('x')
+n = symbols('n', integer=True)
+
+a_n = 2/pi*integrate(sin(x) * cos(n*x), (x, 0, pi))
+
+print(latex(a_n))
+#+end_src
+
+#+RESULTS:
+#+begin_export latex
+\frac{2 \left(\begin{cases} 0 & \text{for}\: n = -1 \vee n = 1 \\- \frac{\left(-1\right)^{n}}{n^{2} - 1} - \frac{1}{n^{2} - 1} & \text{otherwise} \end{cases}\right)}{\pi}
+#+end_export
+
+Po obliczeniu całki dla $a_n$ otrzymujemy:
+\begin{align*}
+a_n &= -\frac{2}{\pi}\cdot \frac{cos(\pi n) + 1}{n^2-1} = -\frac{2}{\pi}\cdot \frac{(-1)^n + 1}{n^2-1}, \quad n = 0,2,\ldots,\\
+a_1 &= 0
+\end{align*}
+
+
+\begin{equation*}
+S(x) =  \frac{2}{\pi} + \sum_{n=2}^{\infty} \frac{-2}{\pi}\cdot \frac{1 + (-1)^n}{n^2-1} \cdot \cos(n x) =
+\frac{2}{\pi} + \sum_{n=1}^{\infty} \frac{-4 \cos(2nx)}{\pi((2n)^2 - 1)}
+\end{equation*}
+
+
+#+begin_src python :results graphics file output :file 3dom.png :exports results
+
+import math
+import numpy as np
+import matplotlib.pyplot as plt
+import scienceplots
+
+plt.style.use('science')
+
+
+ns = [0, 1,2,3,4, 5]
+
+def S(x, n):
+#    return 2/np.pi + sum(-2/np.pi * (1 + (-1)**n) / (n**2-1) *np.cos(n*x) for n in range(2, n))
+    if n== 0:
+        return np.ones(x.shape)*2/np.pi
+    if n == 1:
+        return 2/np.pi +  -4*np.cos(2*x)/np.pi/((2)**2 - 1)
+
+    return 2/np.pi + sum( -4*np.cos(2*n*x)/np.pi/((2*n)**2 - 1)  for n in range(1, n)  )
+
+
+fig, axes = plt.subplots(math.ceil(len(ns)/2), 2, figsize=(8, 8), dpi=300)
+
+for n,ax in zip(ns, axes.flatten()):
+    x = np.linspace(-np.pi, np.pi, 1000)
+    y = np.abs(np.sin(x))
+    ax.plot(x, y, label='$y=|\sin x|$')
+    ax.plot(x, S(x, n),'--', label=f'$n = {n+1}$')
+    ax.legend()
+plt.tight_layout()
+#+end_src
+
+#+ATTR_LATEX: :placement [H]
+#+CAPTION: Wykresy porównujące funkcję $|\sin x|$ z jej przybliżeniem w którym użyto $n$ wyrazów szeregu.
+#+RESULTS:
+[[file:3dom.png]]
+*Wnioski*: W oparciu o przeprowadzone przybliżenie funkcji $| \sin x|$ za pomocą
+trygonometrycznego szeregu Fouriera na przedziale  $[−\pi,\pi]$, możemy
+zaobserwować, że z każdym kolejnym wyrazem szeregu, aproksymacja staje się
+dokładniejsza.
+* Bibliografia
++ Marian Bubak, Katarzyna Rycerz: /Metody Obliczeniowe w Nauce i Technice. Aproksymacja/
++ Włodzimierz Funika: [[https://home.agh.edu.pl/~funika/mownit/lab4/wielomianygrama.pdf][Aproksymacja za pomocą wielomianów Grama]]
++ Włodzimierz Funika: [[https://home.agh.edu.pl/~funika/mownit/lab4/aproksymacja.pdf][Aproksymacja]]
